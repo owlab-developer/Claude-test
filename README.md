@@ -1,4 +1,4 @@
-Create, test, and iteratively improve AI agent skills with structured evaluation and benchmarking 1.
+Create, test, and iteratively improve AI agent skills with structured evaluation and benchmarking.
 
 Guides you through the full skill development lifecycle: intent capture, drafting, test case creation, evaluation, and iteration based on user feedback
 Runs parallel test cases with and without the skill to measure impact, capturing timing and token usage for quantitative comparison
