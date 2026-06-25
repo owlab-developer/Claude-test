@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2048</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #F5F0E8;
+      font-family: 'Nunito', 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    #app {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 16px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .game__header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .game__title {
+      font-size: 56px;
+      font-weight: 800;
+      color: #3D2E22;
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+
+    .game__scores {
+      display: flex;
+      gap: 10px;
+    }
+
+    .game__score-box {
+      background: #C4B09A;
+      border-radius: 10px;
+      padding: 8px 14px;
+      text-align: center;
+      min-width: 74px;
+    }
+
+    .game__score-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #F5F0E8;
+      opacity: 0.85;
+    }
+
+    .game__score-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: #F5F0E8;
+      line-height: 1.1;
+    }
+
+    .game__actions {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      background: #E8724A;
+      color: #F5F0E8;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.96); }
+
+    .grid {
+      background: #C4B09A;
+      border-radius: 14px;
+      padding: 10px;
+      width: 100%;
+      aspect-ratio: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      position: relative;
+    }
+
+    .grid__cell {
+      background: #D9C9B8;
+      border-radius: 8px;
+      aspect-ratio: 1;
+    }
+
+    .tiles {
+      position: absolute;
+      inset: 10px;
+      pointer-events: none;
+    }
+
+    .tile {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: clamp(18px, 7vw, 42px);
+      background: #D9C9B8;
+      color: #3D2E22;
+      transition: left 0.1s ease, top 0.1s ease;
+    }
+
+    .tile--big { font-size: clamp(13px, 4.5vw, 26px); }
+
+    .tile--2    { background: #EEE4DA; color: #3D2E22; }
+    .tile--4    { background: #EDE0C8; color: #3D2E22; }
+    .tile--8    { background: #F2B179; color: #F5F0E8; }
+    .tile--16   { background: #F59563; color: #F5F0E8; }
+    .tile--32   { background: #F67C5F; color: #F5F0E8; }
+    .tile--64   { background: #F65E3B; color: #F5F0E8; }
+    .tile--128  { background: #EDCF72; color: #F5F0E8; }
+    .tile--256  { background: #EDCC61; color: #F5F0E8; }
+    .tile--512  { background: #EDC850; color: #F5F0E8; }
+    .tile--1024 { background: #EDC53F; color: #F5F0E8; }
+    .tile--2048 { background: #EDC22E; color: #F5F0E8; }
+
+    @keyframes pop {
+      0%   { transform: scale(0.4); }
+      60%  { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes merge {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+
+    .tile-pop   { animation: pop   0.2s ease-out; }
+    .tile-merge { animation: merge 0.15s ease-out; }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(245, 240, 232, 0.78);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      backdrop-filter: blur(3px);
+      animation: fade-in 0.25s ease;
+      z-index: 10;
+    }
+
+    .overlay__title {
+      font-size: 38px;
+      font-weight: 800;
+      color: #3D2E22;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #3D2E22;
+      opacity: 0.4;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    const { createApp, ref, onMounted, onUnmounted, nextTick } = Vue
+
+    const SIZE = 4
+    const GAP = 10
+
+    createApp({
+      setup() {
+        let idCounter = 0
+
+        const grid    = ref([])
+        const tiles   = ref([])
+        const score   = ref(0)
+        const best    = ref(Number(localStorage.getItem('2048-best') || 0))
+        const gameOver = ref(false)
+        const won      = ref(false)
+        const gameEl   = ref(null)
+
+        let touchX = 0, touchY = 0
+
+        function newGame() {
+          grid.value = Array.from({ length: SIZE }, () => Array(SIZE).fill(0))
+          tiles.value = []
+          score.value = 0
+          gameOver.value = false
+          won.value = false
+          idCounter = 0
+          spawn()
+          spawn()
+          nextTick(() => gameEl.value?.focus())
+        }
+
+        function spawn() {
+          const empty = []
+          for (let r = 0; r < SIZE; r++)
+            for (let c = 0; c < SIZE; c++)
+              if (!grid.value[r][c]) empty.push([r, c])
+          if (!empty.length) return
+          const [r, c] = empty[Math.floor(Math.random() * empty.length)]
+          const val = Math.random() < 0.9 ? 2 : 4
+          grid.value[r][c] = ++idCounter
+          tiles.value.push({ id: idCounter, value: val, row: r, col: c, anim: 'pop' })
+        }
+
+        function tileStyle(tile) {
+          const cellSize = `calc((100% - ${GAP * (SIZE - 1)}px) / ${SIZE})`
+          return {
+            width: cellSize,
+            height: cellSize,
+            left: `calc(${tile.col} * (${cellSize} + ${GAP}px))`,
+            top:  `calc(${tile.row} * (${cellSize} + ${GAP}px))`,
+          }
+        }
+
+        function tileClass(tile) {
+          return [
+            'tile',
+            `tile--${Math.min(tile.value, 2048)}`,
+            tile.value >= 1000 ? 'tile--big' : '',
+            tile.anim === 'pop'   ? 'tile-pop'   : '',
+            tile.anim === 'merge' ? 'tile-merge'  : '',
+          ]
+        }
+
+        function coordAt(i, j, dir) {
+          if (dir === 'left')  return [i, j]
+          if (dir === 'right') return [i, SIZE - 1 - j]
+          if (dir === 'up')    return [j, i]
+          if (dir === 'down')  return [SIZE - 1 - j, i]
+        }
+
+        function move(dir) {
+          if (gameOver.value || won.value) return
+          tiles.value.forEach(t => t.anim = '')
+
+          let moved = false
+          const newGrid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0))
+          const gone = []
+          let earned = 0
+
+          for (let i = 0; i < SIZE; i++) {
+            const line = []
+            for (let j = 0; j < SIZE; j++) {
+              const [r, c] = coordAt(i, j, dir)
+              const id = grid.value[r][c]
+              if (id) {
+                const t = tiles.value.find(x => x.id === id)
+                if (t) line.push(t)
+              }
+            }
+
+            const merged = []
+            let k = 0
+            while (k < line.length) {
+              if (k + 1 < line.length && line[k].value === line[k + 1].value) {
+                const val = line[k].value * 2
+                earned += val
+                line[k].value = val
+                line[k].anim  = 'merge'
+                gone.push(line[k + 1].id)
+                merged.push(line[k])
+                k += 2
+              } else {
+                merged.push(line[k])
+                k++
+              }
+            }
+
+            for (let j = 0; j < SIZE; j++) {
+              const [r, c] = coordAt(i, j, dir)
+              if (j < merged.length) {
+                const t = merged[j]
+                if (t.row !== r || t.col !== c) moved = true
+                t.row = r; t.col = c
+                newGrid[r][c] = t.id
+              } else {
+                newGrid[r][c] = 0
+              }
+            }
+            if (merged.length !== line.length) moved = true
+          }
+
+          if (!moved) return
+
+          tiles.value = tiles.value.filter(t => !gone.includes(t.id))
+          grid.value = newGrid
+          score.value += earned
+          if (score.value > best.value) {
+            best.value = score.value
+            localStorage.setItem('2048-best', best.value)
+          }
+
+          if (tiles.value.some(t => t.value >= 2048)) { won.value = true; return }
+
+          spawn()
+          checkOver()
+        }
+
+        function checkOver() {
+          for (let r = 0; r < SIZE; r++) {
+            for (let c = 0; c < SIZE; c++) {
+              if (!grid.value[r][c]) return
+              const t = tiles.value.find(x => x.id === grid.value[r][c])
+              if (!t) continue
+              const right = c + 1 < SIZE && tiles.value.find(x => x.id === grid.value[r][c + 1])
+              const down  = r + 1 < SIZE && tiles.value.find(x => x.id === grid.value[r + 1][c])
+              if (right && right.value === t.value) return
+              if (down  && down.value  === t.value) return
+            }
+          }
+          gameOver.value = true
+        }
+
+        function onKey(e) {
+          const map = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' }
+          if (map[e.key]) { e.preventDefault(); move(map[e.key]) }
+        }
+
+        function touchStart(e) {
+          touchX = e.touches[0].clientX
+          touchY = e.touches[0].clientY
+        }
+
+        function touchEnd(e) {
+          const dx = e.changedTouches[0].clientX - touchX
+          const dy = e.changedTouches[0].clientY - touchY
+          if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+          move(Math.abs(dx) > Math.abs(dy)
+            ? (dx > 0 ? 'right' : 'left')
+            : (dy > 0 ? 'down'  : 'up'))
+        }
+
+        onMounted(() => { newGame(); window.addEventListener('keydown', onKey) })
+        onUnmounted(() => window.removeEventListener('keydown', onKey))
+
+        return { gameEl, tiles, score, best, gameOver, won, newGame, tileStyle, tileClass, touchStart, touchEnd }
+      },
+
+      template: `
+        <div class="game" ref="gameEl" tabindex="0" @keydown.prevent>
+          <header class="game__header">
+            <h1 class="game__title">2048</h1>
+            <div class="game__scores">
+              <div class="game__score-box">
+                <div class="game__score-label">Score</div>
+                <div class="game__score-value">{{ score }}</div>
+              </div>
+              <div class="game__score-box">
+                <div class="game__score-label">Best</div>
+                <div class="game__score-value">{{ best }}</div>
+              </div>
+            </div>
+          </header>
+
+          <div class="game__actions">
+            <button class="btn" @click="newGame">New Game</button>
+          </div>
+
+          <div class="grid"
+            @touchstart.prevent="touchStart"
+            @touchend.prevent="touchEnd"
+          >
+            <div v-for="i in 16" :key="i" class="grid__cell"></div>
+
+            <div class="tiles">
+              <div
+                v-for="tile in tiles"
+                :key="tile.id"
+                :class="tileClass(tile)"
+                :style="tileStyle(tile)"
+              >{{ tile.value }}</div>
+            </div>
+
+            <div v-if="gameOver || won" class="overlay">
+              <div class="overlay__title">{{ won ? 'You Win! 🎉' : 'Game Over' }}</div>
+              <button class="btn" @click="newGame">Try Again</button>
+            </div>
+          </div>
+
+          <p class="hint">Arrow keys or swipe to move</p>
+        </div>
+      `
+    }).mount('#app')
+  </script>
+</body>
+</html>
