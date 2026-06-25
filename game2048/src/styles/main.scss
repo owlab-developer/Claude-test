@@ -1,0 +1,239 @@
+@use 'sass:list';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+$bg: #F5F0E8;
+$grid-bg: #C4B09A;
+$cell-bg: #D9C9B8;
+$text-dark: #3D2E22;
+$text-light: #F5F0E8;
+$accent: #E8724A;
+
+$tile-colors: (
+  2:    (#EEE4DA, $text-dark),
+  4:    (#EDE0C8, $text-dark),
+  8:    (#F2B179, $text-light),
+  16:   (#F59563, $text-light),
+  32:   (#F67C5F, $text-light),
+  64:   (#F65E3B, $text-light),
+  128:  (#EDCF72, $text-light),
+  256:  (#EDCC61, $text-light),
+  512:  (#EDC850, $text-light),
+  1024: (#EDC53F, $text-light),
+  2048: (#EDC22E, $text-light),
+);
+
+body {
+  background: $bg;
+  font-family: 'Nunito', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#app {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 16px;
+  width: 100%;
+  max-width: 420px;
+
+  &__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    font-size: 48px;
+    font-weight: 800;
+    color: $text-dark;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  &__scores {
+    display: flex;
+    gap: 10px;
+  }
+
+  &__score-box {
+    background: $grid-bg;
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 70px;
+
+    &-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $text-light;
+      opacity: 0.85;
+    }
+
+    &-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: $text-light;
+      line-height: 1.1;
+    }
+  }
+
+  &__actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  &__btn {
+    background: $accent;
+    color: $text-light;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    font-family: inherit;
+
+    &:hover { opacity: 0.88; }
+    &:active { transform: scale(0.96); }
+  }
+}
+
+.grid {
+  background: $grid-bg;
+  border-radius: 14px;
+  padding: 10px;
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  position: relative;
+
+  &__cell {
+    background: $cell-bg;
+    border-radius: 8px;
+    aspect-ratio: 1;
+  }
+}
+
+.tiles {
+  position: absolute;
+  inset: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  pointer-events: none;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: clamp(18px, 5vw, 36px);
+  transition: transform 0.1s ease;
+  animation: tile-appear 0.15s ease-out;
+  background: $cell-bg;
+  color: $text-dark;
+
+  @each $val, $colors in $tile-colors {
+    &--#{$val} {
+      background: list.nth($colors, 1);
+      color: list.nth($colors, 2);
+    }
+  }
+
+  &--big { font-size: clamp(13px, 3.5vw, 24px); }
+
+  &--new { animation: tile-pop 0.2s ease-out; }
+  &--merged { animation: tile-merge 0.15s ease-out; }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba($bg, 0.75);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  backdrop-filter: blur(2px);
+  animation: fade-in 0.3s ease;
+
+  &__title {
+    font-size: 36px;
+    font-weight: 800;
+    color: $text-dark;
+  }
+
+  &__btn {
+    background: $accent;
+    color: $text-light;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+
+    &:hover { opacity: 0.88; }
+  }
+}
+
+.hint {
+  font-size: 13px;
+  color: $text-dark;
+  opacity: 0.45;
+  font-weight: 600;
+}
+
+@keyframes tile-appear {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes tile-pop {
+  0%   { transform: scale(0.4); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tile-merge {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
